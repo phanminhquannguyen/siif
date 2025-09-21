@@ -1,0 +1,37 @@
+{
+  "metadata": {
+    "ticker": "CBA",
+    "as_of": "2025-08-30",
+    "source": "/Users/minhquan/Documents/SIIF/full-year-profit-announcement.pdf"
+  },
+  "units": {
+    "currency": "AUD",
+    "scale": 1000000
+  },
+  "income_statement": {
+    "revenue": 28290,
+    "gross_profit": null,
+    "operating_income": 10116,
+    "net_income": 10116,
+    "eps_basic": null,
+    "eps_diluted": null
+  },
+  "balance_sheet": {
+    "total_assets": null,
+    "total_liabilities": null,
+    "total_equity": null,
+    "shares_outstanding": null
+  },
+  "cash_flow": {
+    "operating_cf": null,
+    "investing_cf": null,
+    "financing_cf": null,
+    "free_cf": null
+  },
+  "derived": {
+    "pe_ratio_basic": null,
+    "pe_ratio_diluted": null,
+    "profit_margin": 0.35758218451749735,
+    "return_on_equity": null
+  }
+}
