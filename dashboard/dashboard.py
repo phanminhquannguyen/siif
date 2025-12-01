@@ -36,7 +36,7 @@ def format_number(val):
         return val
 
 # Read definitions from definitions.json
-with open("financial_dashboard/definitions.json", "r", encoding="utf-8") as f:
+with open("dashboard/definitions.json", "r", encoding="utf-8") as f:
     definitions_data = json.load(f)
     definitions = {}
     for metric in definitions_data["metrics"]:
