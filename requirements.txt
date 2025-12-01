@@ -1,2 +1,7 @@
 streamlit
+pdfplumber
+google-generativeai
 pandas
+plotly
+openpyxl
+supabase

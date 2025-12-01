@@ -1,0 +1,8 @@
+# Streamlit
+.streamlit/secrets.toml
+
+# Python cache
+__pycache__/
+
+# Data files 
+*.csv
