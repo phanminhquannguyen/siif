@@ -6,3 +6,9 @@ __pycache__/
 
 # Data files 
 *.csv
+
+# Miniforge/Conda
+miniforge/
+miniforge3/
+**/miniforge/
+**/miniforge3/
