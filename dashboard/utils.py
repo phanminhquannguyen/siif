@@ -1,6 +1,16 @@
 import pandas as pd
 import numpy as np
 
+def format_number(val):
+    """
+    Format numeric values for display, handling both strings and numbers.
+    """
+    try:
+        val = float(val)
+        return f"{int(val):,}" if val.is_integer() else f"{val:,.2f}"
+    except Exception:
+        return str(val)
+
 def find_similar_companies(data, threshold=0.1, skip_cols=None, max_results=3):
     """
     For each company (row, indexed by Ticker) and each numeric metric column (excluding skipped columns),
@@ -58,3 +68,55 @@ def find_similar_companies(data, threshold=0.1, skip_cols=None, max_results=3):
             result[company][metric] = "\n".join(similar) if similar else "None"
     
     return result
+
+def get_industry_companies_with_metrics(data, target_company, metric_col, top_n=3):
+    """
+    Find companies in the same industry and return their values for a specific metric.
+    
+    Parameters:
+    - data: pandas DataFrame with 'ticker' and 'industry' columns
+    - target_company: ticker of the company to find peers for
+    - metric_col: the specific metric column to get values for
+    - top_n: number of companies to return (default 3)
+    
+    Returns:
+    - str: formatted string with company tickers and their metric values, or "N/A"
+    """
+    
+    # Find target company's industry
+    target_row = data[data['ticker'] == target_company]
+    if target_row.empty:
+        return "N/A"
+    
+    target_industry = target_row['industry'].iloc[0]
+    
+    # Find other companies in same industry with non-null values for the metric
+    same_industry = data[
+        (data['industry'] == target_industry) & 
+        (data['ticker'] != target_company) &
+        (data[metric_col].notna())
+    ]
+    
+    if same_industry.empty:
+        return "None"
+    
+    # Convert to numeric for sorting, but keep original values for display
+    same_industry = same_industry.copy()
+    numeric_col = pd.to_numeric(same_industry[metric_col], errors='coerce')
+    same_industry['_numeric_sort'] = numeric_col
+    
+    # Sort by numeric value (descending) and take top_n
+    same_industry = same_industry.dropna(subset=['_numeric_sort']).sort_values(by='_numeric_sort', ascending=False).head(top_n)
+    
+    # Format results
+    results = []
+    for _, row in same_industry.iterrows():
+        value = row[metric_col]
+        if pd.isna(value):
+            continue
+        
+        # Use format_number function to handle formatting consistently
+        formatted_value = format_number(value)
+        results.append(f"{row['ticker']} ({formatted_value})")
+    
+    return "\n".join(results) if results else "None"

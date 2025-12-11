@@ -3,7 +3,7 @@ import pandas as pd
 from supabase import create_client, Client
 import json
 from model import analyze_report
-from utils import find_similar_companies
+from utils import find_similar_companies, get_industry_companies_with_metrics
 
 # Set the layout for the page
 st.set_page_config(layout="wide") 
@@ -107,23 +107,29 @@ if page == "Financial Dashboard":
                     st.info("No available data.")
                 else:
                     industry_averages = []
+                    industry_companies = []
                     for metric in row.index:
                         avg_value = "N/A"
                         if sector_average_row is not None and metric in sector_average_row.index:
                             avg_value = format_number(sector_average_row[metric])
                         industry_averages.append(avg_value)
+                        
+                        # Get industry companies with their metric values
+                        industry_peers = get_industry_companies_with_metrics(df, ticker, metric, top_n=3)
+                        industry_companies.append(industry_peers)
 
                     clean_df = pd.DataFrame({
                         "Metric": row.index,
                         "Value": [format_number(v) for v in row.values],
-                        "Similar Companies": [similarity_results.get(ticker, {}).get(metric, "N/A") for metric in row.index],
+                        "Company that has similar metric": [similarity_results.get(ticker, {}).get(metric, "N/A") for metric in row.index],
+                        "Industry Companies": industry_companies,
                         "Industry Average": industry_averages
                     })
 
                     # Create table layout
                     with st.container():
                         st.markdown('<div class="table-header">', unsafe_allow_html=True)
-                        col1, col2, col3, col4, col5 = st.columns([2, 2, 1, 3, 2])
+                        col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 1, 3, 3, 2])
                         with col1:
                             st.markdown('<div class="table-cell metric">Metric</div>', unsafe_allow_html=True)
                         with col2:
@@ -131,14 +137,16 @@ if page == "Financial Dashboard":
                         with col3:
                             st.markdown('<div class="table-cell notes">Notes</div>', unsafe_allow_html=True)
                         with col4:
-                            st.markdown('<div class="table-cell similar">Similar Companies</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="table-cell similar">Company that has similar metric</div>', unsafe_allow_html=True)
                         with col5:
+                            st.markdown('<div class="table-cell industry">Industry Companies</div>', unsafe_allow_html=True)
+                        with col6:
                             st.markdown('<div class="table-cell spacer">Industry Average</div>', unsafe_allow_html=True)
                         st.markdown('</div>', unsafe_allow_html=True)
 
                         for idx, row in clean_df.iterrows():
                             st.markdown('<div class="table-row">', unsafe_allow_html=True)
-                            col1, col2, col3, col4, col5 = st.columns([2, 2, 1, 3, 2])
+                            col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 1, 3, 3, 2])
                             with col1:
                                 st.markdown(f'<div class="table-cell metric">{row["Metric"]}</div>', unsafe_allow_html=True)
                             with col2:
@@ -148,8 +156,10 @@ if page == "Financial Dashboard":
                                     definition = definitions.get(row["Metric"], "No definition available")
                                     st.markdown(definition)
                             with col4:
-                                st.markdown(f'<div class="table-cell similar">{row["Similar Companies"]}</div>', unsafe_allow_html=True)
+                                st.markdown(f'<div class="table-cell similar">{row["Company that has similar metric"]}</div>', unsafe_allow_html=True)
                             with col5:
+                                st.markdown(f'<div class="table-cell industry">{row["Industry Companies"]}</div>', unsafe_allow_html=True)
+                            with col6:
                                 st.markdown(f'<div class="table-cell industry-avg">{row["Industry Average"]}</div>', unsafe_allow_html=True)
                             st.markdown('</div>', unsafe_allow_html=True)
 
