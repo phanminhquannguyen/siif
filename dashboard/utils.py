@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import yfinance as yf
+import json
 
 def format_number(val):
     """
@@ -11,7 +13,7 @@ def format_number(val):
     except Exception:
         return str(val)
 
-def find_similar_companies(data, threshold=0.1, skip_cols=None, max_results=3):
+def find_similar_companies(data, threshold=0.1, skip_cols=None, max_results=10):
     """
     For each company (row, indexed by Ticker) and each numeric metric column (excluding skipped columns),
     find other companies with values within a relative threshold.
@@ -69,7 +71,7 @@ def find_similar_companies(data, threshold=0.1, skip_cols=None, max_results=3):
     
     return result
 
-def get_industry_companies_with_metrics(data, target_company, metric_col, top_n=3):
+def get_industry_companies_with_metrics(data, target_company, metric_col, top_n=10):
     """
     Find companies in the same industry and return their values for a specific metric.
     
@@ -77,7 +79,7 @@ def get_industry_companies_with_metrics(data, target_company, metric_col, top_n=
     - data: pandas DataFrame with 'ticker' and 'industry' columns
     - target_company: ticker of the company to find peers for
     - metric_col: the specific metric column to get values for
-    - top_n: number of companies to return (default 3)
+    - top_n: number of companies to return (default 10)
     
     Returns:
     - str: formatted string with company tickers and their metric values, or "N/A"
@@ -108,6 +110,9 @@ def get_industry_companies_with_metrics(data, target_company, metric_col, top_n=
     # Sort by numeric value (descending) and take top_n
     same_industry = same_industry.dropna(subset=['_numeric_sort']).sort_values(by='_numeric_sort', ascending=False).head(top_n)
     
+    # DEBUG: Print how many companies after filtering and sorting
+    print(f"DEBUG: After filtering and sorting, got {len(same_industry)} companies (requested top_n={top_n})")
+    
     # Format results
     results = []
     for _, row in same_industry.iterrows():
@@ -119,4 +124,51 @@ def get_industry_companies_with_metrics(data, target_company, metric_col, top_n=
         formatted_value = format_number(value)
         results.append(f"{row['ticker']} ({formatted_value})")
     
+    print(f"DEBUG: Final results count: {len(results)}")
     return "\n".join(results) if results else "None"
+
+def get_financial_data(ticker):
+    """
+    Fetch financial data for a given ticker from Yahoo Finance.
+    
+    Parameters:
+    - ticker: str, the ticker symbol (e.g., 'AAPL.AX')
+    
+    Returns:
+    - dict: financial data including balance sheet, income statement, and cash flow
+    """
+    try:
+        # Create yfinance ticker object
+        stock = yf.Ticker(ticker)
+        
+        # Get financial statements
+        balance_sheet = stock.balance_sheet
+        income_stmt = stock.financials
+        cash_flow = stock.cashflow
+        
+        # Convert to dictionary format
+        financial_data = {}
+        
+        if not balance_sheet.empty:
+            financial_data['balance_sheet'] = balance_sheet.to_dict()
+        
+        if not income_stmt.empty:
+            financial_data['income_statement'] = income_stmt.to_dict()
+            
+        if not cash_flow.empty:
+            financial_data['cash_flow'] = cash_flow.to_dict()
+        
+        # Add basic info
+        info = stock.info
+        financial_data['info'] = {
+            'sector': info.get('sector', 'N/A'),
+            'industry': info.get('industry', 'N/A'),
+            'marketCap': info.get('marketCap', None),
+            'symbol': ticker
+        }
+        
+        return financial_data
+        
+    except Exception as e:
+        print(f"Error fetching data for {ticker}: {e}")
+        return None

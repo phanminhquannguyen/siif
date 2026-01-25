@@ -108,14 +108,28 @@ if page == "Financial Dashboard":
                 else:
                     industry_averages = []
                     industry_companies = []
+                    industry_average_details = []
                     for metric in row.index:
                         avg_value = "N/A"
+                        companies_contributing = []
+                        
                         if sector_average_row is not None and metric in sector_average_row.index:
                             avg_value = format_number(sector_average_row[metric])
+                            
+                            # Get companies that contributed to this average
+                            same_sector_companies = df[df['sector'] == company_sector]
+                            companies_with_metric = same_sector_companies[same_sector_companies[metric].notna()]
+                            
+                            for _, comp_row in companies_with_metric.iterrows():
+                                comp_value = comp_row[metric]
+                                if pd.notna(comp_value):
+                                    companies_contributing.append(f"{comp_row['ticker']}: {format_number(comp_value)}")
+                        
                         industry_averages.append(avg_value)
+                        industry_average_details.append(companies_contributing)
                         
                         # Get industry companies with their metric values
-                        industry_peers = get_industry_companies_with_metrics(df, ticker, metric, top_n=3)
+                        industry_peers = get_industry_companies_with_metrics(df, ticker, metric, top_n=10)
                         industry_companies.append(industry_peers)
 
                     clean_df = pd.DataFrame({
@@ -123,7 +137,8 @@ if page == "Financial Dashboard":
                         "Value": [format_number(v) for v in row.values],
                         "Company that has similar metric": [similarity_results.get(ticker, {}).get(metric, "N/A") for metric in row.index],
                         "Industry Companies": industry_companies,
-                        "Industry Average": industry_averages
+                        "Industry Average": industry_averages,
+                        "Industry Average Details": industry_average_details
                     })
 
                     # Create table layout
@@ -160,7 +175,17 @@ if page == "Financial Dashboard":
                             with col5:
                                 st.markdown(f'<div class="table-cell industry">{row["Industry Companies"]}</div>', unsafe_allow_html=True)
                             with col6:
-                                st.markdown(f'<div class="table-cell industry-avg">{row["Industry Average"]}</div>', unsafe_allow_html=True)
+                                col6_sub1, col6_sub2 = st.columns([3, 1])
+                                with col6_sub1:
+                                    st.markdown(f'<div class="table-cell industry-avg">{row["Industry Average"]}</div>', unsafe_allow_html=True)
+                                with col6_sub2:
+                                    with st.popover("📊"):
+                                        st.markdown("**Companies contributing to this average:**")
+                                        if row["Industry Average Details"]:
+                                            for company_detail in row["Industry Average Details"]:
+                                                st.markdown(f"• {company_detail}")
+                                        else:
+                                            st.markdown("No data available")
                             st.markdown('</div>', unsafe_allow_html=True)
 
             except Exception as e:
